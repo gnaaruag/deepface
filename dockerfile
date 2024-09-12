@@ -4,7 +4,7 @@ FROM python:3.8-slim
 RUN apt-get update && apt-get install -y git
 
 # Install Python 3.10
-RUN apt-get update && apt-get install -y python3.10-dev
+RUN apt-get update && apt-get install -y python3.10
 
 RUN apt-get install build-essential
 # Set the working directory
