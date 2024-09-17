@@ -2,14 +2,19 @@ FROM ubuntu:latest
 
 # Install system packages and Python 3.10
 RUN apt-get update && apt-get install -y \
+    software-properties-common \
     git \
-    python3.10 \
-    python3.10-distutils \
     ffmpeg \
     libsm6 \
     libxext6 \
+    libssl-dev \
+    libffi-dev \
     build-essential \
     curl
+
+# Add deadsnakes PPA for Python 3.10
+RUN add-apt-repository ppa:deadsnakes/ppa && apt-get update && \
+    apt-get install -y python3.10 python3.10-distutils
 
 # Install pip for Python 3.10
 RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.10 get-pip.py
@@ -25,9 +30,12 @@ WORKDIR /deepface
 RUN git clone https://github.com/gnaaruag/deepface.git /deepface
 
 # Install Python packages
-RUN pip3 install onnxruntime-gpu==1.15.0 torchaudio==2.0.1 \
-    torch==2.0.0+cu118 torchvision==0.15.1+cu118 --index-url https://download.pytorch.org/whl/cu118 && \
-    pip3 install -r /deepface/requirements.txt
+RUN pip install onnxruntime-gpu==1.15.0
+RUN pip install torchaudio==2.0.1 
+RUN pip install torch==2.0.0+cu118 torchvision==0.15.1+cu118 --index-url https://download.pytorch.org/whl/cu118
+# Clone the repository
+RUN pip install torch==2.0.0+cu118 torchvision==0.15.1+cu118 torchaudio==2.0.1
+RUN pip install -r /deepface/requirements.txt
 
 # Set execute permissions for the script
 RUN chmod +x /deepface/script.sh
