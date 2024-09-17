@@ -1,6 +1,22 @@
-FROM ubuntu:latest
+FROM nvidia/cuda:11.7.1-cudnn8-runtime-ubuntu20.04
 
-# Install system packages and Python 3.10
+# Set environment variables to avoid the interactive timezone prompt
+# ENV DEBIAN_FRONTEND=noninteractive
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Install Miniconda
+RUN apt-get update && apt-get install -y wget && \
+    wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+    bash ~/miniconda.sh -b -p /opt/conda && \
+    rm ~/miniconda.sh && \
+    /opt/conda/bin/conda init && \
+    ln -s /opt/conda/bin/conda /usr/local/bin/conda
+
+# Set the path to Conda
+ENV PATH="/opt/conda/bin:$PATH"
+
 RUN apt-get update && apt-get install -y \
     software-properties-common \
     git \
@@ -12,33 +28,21 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     curl
 
-# Add deadsnakes PPA for Python 3.10
-RUN add-apt-repository ppa:deadsnakes/ppa && apt-get update && \
-    apt-get install -y python3.10 python3.10-distutils
+# Create a Conda environment
+RUN conda create -n deepface python=3.10 -y
 
-# Install pip for Python 3.10
-RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.10 get-pip.py
+# Activate the Conda environment
+SHELL ["conda", "run", "-n", "deepface", "/bin/bash", "-c"]
 
-# Set Python 3.10 as the default for python3 and pip
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 && \
-    update-alternatives --install /usr/bin/pip3 pip3 /usr/local/bin/pip3 1
+# Install dependencies using pip inside the Conda environment
+COPY requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
 
-# Set the working directory
-WORKDIR /deepface
+# Copy the project files into the container
+COPY . .
 
-# Clone the repository
-RUN git clone https://github.com/gnaaruag/deepface.git /deepface
-
-# Install Python packages
-RUN pip install onnxruntime-gpu==1.15.0
-RUN pip install torchaudio==2.0.1 
-RUN pip install torch==2.0.0+cu118 torchvision==0.15.1+cu118 --index-url https://download.pytorch.org/whl/cu118
-# Clone the repository
-RUN pip install torch==2.0.0+cu118 torchvision==0.15.1+cu118 torchaudio==2.0.1
-RUN pip install -r /deepface/requirements.txt
-
-# Set execute permissions for the script
-RUN chmod +x /deepface/script.sh
-
-# Run the script
-CMD ["/deepface/script.sh"]
+# Set the default command to use the Conda environment
+# Run the predict.py file
+# CMD ["conda", "run", "-n", "deepface", "python", "predict.py"]
+ENTRYPOINT [ "python", "predict.py" ]
