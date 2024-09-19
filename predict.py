@@ -1,5 +1,4 @@
 from cog import BasePredictor, Input
-from cog import Path as CogPath
 import sys
 import time
 import shutil
@@ -71,12 +70,12 @@ class Predictor(BasePredictor):
 
     def predict(
         self,
-        source: CogPath = Input(description="Source", default=None),
-        target: CogPath = Input(description="Target", default=None),
-        reference_image: CogPath = Input(description="Reference Image", default=None),
+        source: str = Input(description="Source", default=None),
+        target: str = Input(description="Target", default=None),
+        reference_image: str = Input(description="Reference Image", default=None),
         keep_fps: bool = Input(description="Keep FPS", default=True),
         keep_frames: bool = Input(description="Keep Frames", default=True),
-    ) -> Iterator[CogPath]:
+    ) -> Iterator[str]:
 
         print("source: ", source)
         print("target: ", target)
@@ -91,9 +90,7 @@ class Predictor(BasePredictor):
             print("\n[WARNING] Please select a video/image to swap face in.")
             return
 
-        source = str(source)
-        target = str(target)
-        reference_image = str(reference_image) if reference_image else None
+        reference_image = reference_image if reference_image else None
 
         face_analyser = self.face_analyser
 
@@ -106,22 +103,25 @@ class Predictor(BasePredictor):
 
         if is_img(target):
             output = process_img(source, target, face_analyser, reference_image)
-            yield CogPath(output)
+            print(output, "predict")
+            yield output
             status("swap successful!")
             return
 
         video_name = "output.mp4"
-        output_dir = "./output"
-
+        output_dir = "output"
+        print('here1')
         if os.path.exists(output_dir):
             shutil.rmtree(output_dir)
-        Path(output_dir).mkdir(exist_ok=True)
+        print('here2')
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
 
         status("detecting video's FPS...")
         fps = detect_fps(target)
 
         if not keep_fps and fps > 30:
-            this_path = output_dir + "/" + video_name + ".mp4"
+            this_path = "/" + video_name + ".mp4"
             set_fps(target, this_path, 30)
             target, fps = this_path, 30
         else:
@@ -131,11 +131,11 @@ class Predictor(BasePredictor):
         extract_frames(target, output_dir)
         frame_paths = tuple(
             sorted(
-                glob.glob(output_dir + f"/*.png"),
-                key=lambda x: int(x.split("/")[-1].replace(".png", "")),
+            glob.glob(os.path.join(output_dir, "*.png")),
+            key=lambda x: int(os.path.basename(x).replace(".png", "")),
             )
         )
-
+        print(frame_paths)
         status("swapping in progress...")
         start_time = time.time()
         process_video(source, frame_paths, face_analyser, reference_image)
@@ -143,23 +143,26 @@ class Predictor(BasePredictor):
         print(f"Processing time: {end_time - start_time:.2f} seconds")
 
         status("creating video...")
-        output_file = create_video(video_name, fps, output_dir)
-
+        print("video_name: ", video_name)
+        output_file = create_video(video_name, fps, "output")
+        print("output_file: ", output_file)
         status("adding audio...")
-        output_file = add_audio(output_dir, target, keep_frames)
+        output_file = add_audio("output", target.split('\\')[-1], keep_frames)
+        print("output_file: ", output_file)
         print("\n\nVideo saved as:", output_file, "\n\n")
-        yield CogPath(output_file)
+        # yield output_file
         status("swap successful!")
 
 
-if __name__ == "__main__":
+def main(source, target, reference_image):
     predictor = Predictor()
     predictor.setup()
     for output in predictor.predict(
-        source=CogPath("source3.jpg"),
-        target=CogPath("target.mp4"),
-        reference_image=CogPath("ref.png"),
+        source=source,
+        target=target,
+        reference_image=reference_image,
     ):
         print(output)
         break
     print("done")
+

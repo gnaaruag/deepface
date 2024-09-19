@@ -44,6 +44,7 @@ def process_video(source_img, frame_paths, face_analyser, reference_img=None):
 
     for frame_path in frame_paths:
         frame = cv2.imread(frame_path)
+        print(frame)
         try:
             # print percentage
             print(
@@ -57,6 +58,7 @@ def process_video(source_img, frame_paths, face_analyser, reference_img=None):
                             frame, face, source_face, paste_back=True
                         )
                         enhanced_result = enhance_face(result)
+                        print(enhanced_result, "EFRAM1")
                         if not is_face_swap_successful(enhanced_result):
                             return False
                         cv2.imwrite(frame_path, enhanced_result)
@@ -65,15 +67,16 @@ def process_video(source_img, frame_paths, face_analyser, reference_img=None):
                 else:
                     result = face_swapper.get(frame, face, source_face, paste_back=True)
                     enhanced_result = enhance_face(result)
+                    print(enhanced_result, "EFRAM2")
                     if not is_face_swap_successful(enhanced_result):
                         return False
                     cv2.imwrite(frame_path, enhanced_result)
                     print(".", end="")
                     break
             else:
-                print("S", end="")
+                print("THE ELSE", end="")
         except Exception as e:
-            print("E", end="")
+            print(e)
             pass
     return True
 
@@ -103,12 +106,10 @@ def process_img(source_img, target_path, face_analyser, reference_img=None):
     if not is_face_swap_successful(enhanced_result):
         return target_path, False
 
-    target_path = (
-        rreplace(target_path, "/", "/swapped-", 1)
-        if "/" in target_path
-        else "swapped-" + target_path
-    )
-    print(target_path)
+    target_path = target_path.split("\\")
+    target_path = target_path[0] + "\swapped-" + target_path[1]
+
+    print(target_path, 'o')
     cv2.imwrite(target_path, enhanced_result)
     return target_path, True
 
