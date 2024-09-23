@@ -61,6 +61,11 @@ async def invocations(
     print(f"Reference Image Path: {reference_image_path}")
     
     main(source_path, target_path, reference_image_path)
+    try:
+        main(source_path, target_path, reference_image_path)
+        return {"status": "200 OK", "message": "successful"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
 
 if __name__ == "__main__":
     print("Starting server...")

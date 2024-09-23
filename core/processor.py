@@ -107,7 +107,7 @@ def process_img(source_img, target_path, face_analyser, reference_img=None):
         return target_path, False
 
     target_path = target_path.split("\\")
-    target_path = target_path[0] + "\swapped-" + target_path[1]
+    target_path = "output" + "\\swapped-" + target_path[-1]
 
     print(target_path, 'o')
     cv2.imwrite(target_path, enhanced_result)
