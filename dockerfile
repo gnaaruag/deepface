@@ -1,6 +1,7 @@
+# Start from the NVIDIA CUDA runtime base image
 FROM nvidia/cuda:11.7.1-cudnn8-runtime-ubuntu20.04
 
-# Set environment variables to avoid the interactive timezone prompt
+# Set environment variables to avoid timezone prompt
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Set the working directory inside the container
@@ -17,6 +18,7 @@ RUN apt-get update && apt-get install -y wget && \
 # Set the path to Conda
 ENV PATH="/opt/conda/bin:$PATH"
 
+# Install system-level dependencies
 RUN apt-get update && apt-get install -y \
     software-properties-common \
     git \
@@ -26,27 +28,29 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     libffi-dev \
     build-essential \
-    curl
+    curl && apt-get clean
 
-# Create a Conda environment
+# Create and activate a Conda environment (Python 3.10)
 RUN conda create -n deepface python=3.10 -y
 
-# Clone the GitHub repository containing the project files
-RUN git clone https://github.com/your-repo/your-project.git /app
+# Clone the project repository
+RUN git clone https://github.com/gnaaruag/deepface.git /app
 
-# Download the ONNX file
-RUN wget https://github.com/facefusion/facefusion-assets/releases/download/models/inswapper_128_fp16.onnx -P /app
-# Download the GFPGANv1.4.pth file
-RUN wget https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.4.pth -P /app
+# Download models during runtime instead of at build time (this keeps the image smaller)
+# You'll download models in entrypoint.sh instead
 
-# Activate the Conda environment and install dependencies using pip inside the Conda environment
+# Switch shell to activate the Conda environment
 SHELL ["conda", "run", "-n", "deepface", "/bin/bash", "-c"]
+
+# Install Python dependencies using pip inside the Conda environment
 RUN pip install --upgrade pip && \
     pip install -r /app/requirements.txt
 
+# Expose the port on which the app will run
 EXPOSE 4321
 
-# Make the entrypoint.sh script executable
+# Make entrypoint script executable (assuming it's in /app)
 RUN chmod +x /app/entrypoint.sh
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+# Entrypoint to execute the application (modify this path as necessary)
+ENTRYPOINT ["/bin/bash", "/app/entrypoint.sh"]
