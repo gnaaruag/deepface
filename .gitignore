@@ -7,3 +7,4 @@ gfp
 GFPGANv1.4.pth
 gfpgan
 env
+dep.py
